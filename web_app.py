@@ -14,8 +14,8 @@ st.set_page_config(page_title="Библейска Викторина", page_icon
 
 # --- ФУНКЦИЯ ЗА РЕГИСТРИРАНЕ НА ШРИФТ (КИРИЛИЦА) ---
 def register_fonts():
-    # Търсим файла arial.ttf в текущата папка
-    font_path = "arial.ttf"
+    # Търсим файла ARIAL.TTF в текущата папка
+    font_path = "ARIAL.TTF"
     
     if os.path.exists(font_path):
         try:
@@ -26,7 +26,7 @@ def register_fonts():
             return 'Helvetica'
     else:
         # Ако файлът липсва, показваме предупреждение в Streamlit
-        st.warning("Внимание: Файлът 'arial.ttf' не е намерен. Кирилицата в PDF може да не излиза коректно.")
+        st.warning("Внимание: Файлът 'ARIAL.TTF' не е намерен. Кирилицата в PDF може да не излиза коректно.")
         return 'Helvetica'
 
 # Глобална променлива за името на шрифта
