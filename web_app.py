@@ -14,7 +14,6 @@ st.set_page_config(page_title="Библейска Викторина", page_icon
 
 # --- ЗАРЕЖДАНЕ НА ШРИФТ ---
 def register_fonts():
-    # Проверка за различни варианти на името на файла
     possible_names = ["arial.ttf", "Arial.ttf", "ARIAL.TTF"]
     for name in possible_names:
         if os.path.exists(name):
@@ -26,7 +25,7 @@ def register_fonts():
 
 FONT_NAME = register_fonts()
 
-# --- ФУНКЦИИ ЗА PDF ДИЗАЙН (ВРЪЩАНЕ НА СТАРИЯ СТИЛ) ---
+# --- ФУНКЦИИ ЗА PDF ДИЗАЙН ---
 def draw_box(c, x, y, status):
     c.setLineWidth(0.5)
     c.setStrokeColor(colors.black)
@@ -54,7 +53,6 @@ def generate_pdf_bytes(name, score, max_score, history):
     c.drawString(50, 775, f"Ученик: {name}")
     c.drawString(50, 760, f"Дата: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
     
-    # Крайна оценка (логика за цвят)
     perc = (score / max_score) * 100 if max_score > 0 else 0
     grade_col = colors.darkgreen if perc >= 70 else colors.red
     
@@ -68,7 +66,6 @@ def generate_pdf_bytes(name, score, max_score, history):
     col1_x, col2_x, y, cur_x = 50, 310, 700, 50
 
     for i, h in enumerate(history):
-        # Проверка за нова колона или страница
         if y < 120:
             if cur_x == col1_x:
                 cur_x, y = col2_x, 700
@@ -94,7 +91,6 @@ def generate_pdf_bytes(name, score, max_score, history):
             y -= 11
         y -= 8 
 
-    # Подпис
     if y < 80: c.showPage(); y = 800
     y -= 40
     c.line(350, y, 530, y)
@@ -118,7 +114,7 @@ def load_questions():
 def main():
     questions_db = load_questions()
     if not questions_db:
-        st.error("Въпросите не могат да бъдат заредени от 'questions.json'!")
+        st.error("Въпросите не могат да бъдат заредени!")
         return
 
     if 'step' not in st.session_state:
@@ -133,15 +129,18 @@ def main():
         st.title("📖 Библейска Викторина")
         name_in = st.text_input("Вашето име:")
         level = st.selectbox("Изберете ниво:", sorted(list(questions_db.keys())))
-        
-        # Можеш да промениш на колко въпроса да е теста тук (например 10 или 20)
-        num_q = st.slider("Колко въпроса искате?", 5, 20, 10)
+        num_q = st.slider("Брой въпроси за теста:", 5, 20, 10)
         
         if st.button("Започни теста"):
             if name_in:
                 st.session_state.user_name = name_in
                 all_qs = questions_db[level]
-                st.session_state.selected_qs = random.sample(all_qs, min(len(all_qs), num_q))
+                
+                # ТУК Е КЛЮЧЪТ: Разбъркваме всичко преди избор
+                temp_qs = all_qs.copy()
+                random.shuffle(temp_qs)
+                
+                st.session_state.selected_qs = random.sample(temp_qs, min(len(temp_qs), num_q))
                 st.session_state.step = "quiz"
                 st.rerun()
             else:
@@ -151,13 +150,13 @@ def main():
         idx = st.session_state.current_q_idx
         q_data = st.session_state.selected_qs[idx]
 
-        st.write(f"Въпрос {idx+1} от {len(st.session_state.selected_qs)}")
+        st.write(f"Ученик: **{st.session_state.user_name}** | Въпрос {idx+1} от {len(st.session_state.selected_qs)}")
         st.progress((idx)/len(st.session_state.selected_qs))
         st.subheader(q_data[0])
         
-        choice = st.radio("Изберете отговор:", q_data[1], key=f"r_{idx}")
+        choice = st.radio("Изберете отговор:", q_data[1], key=f"r_{idx}_{random.randint(0,9999)}")
 
-        if st.button("Следващ ➡️"):
+        if st.button("Следващ въпрос ➡️"):
             user_idx = q_data[1].index(choice)
             is_right = (user_idx == q_data[2])
             if is_right: st.session_state.score += 10
@@ -178,7 +177,7 @@ def main():
         st.balloons()
         st.header("Край на теста!")
         max_p = len(st.session_state.selected_qs) * 10
-        st.metric("Резултат", f"{st.session_state.score} / {max_p}")
+        st.metric("Твоят резултат", f"{st.session_state.score} / {max_p}")
 
         pdf_bytes = generate_pdf_bytes(st.session_state.user_name, st.session_state.score, max_p, st.session_state.history)
         
